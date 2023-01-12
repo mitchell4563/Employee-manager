@@ -1,0 +1,17 @@
+{
+  "name": "employee-db-manager",
+  "version": "1.0.0",
+  "description": "app for adding/removing/managing employees",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "inquirer": "^8.0.0",
+    "mysql2": "^2.3.3"
+  }
+}
