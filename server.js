@@ -106,12 +106,12 @@ function viewEmployeeByDepartment() {
 
   connection.query(query, function (err, res) {
     if (err) throw err;
-
+    res.pop()
     const departmentChoices = res.map((data) => ({
       value: data.id,
       name: data.name,
-    }));
-
+    }
+      ));
     console.table(res);
     console.log("Department view succeed!\n");
 
@@ -398,8 +398,8 @@ function promptAddRole(departmentChoices) {
       connection.query(
         query,
         {
-          title: answer.title,
-          salary: answer.salary,
+          title: answer.roleTitle,
+          salary: answer.roleSalary,
           department_id: answer.departmentId,
         },
         function (err, res) {
