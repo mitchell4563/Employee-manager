@@ -31,10 +31,12 @@ function initialPrompt() {
       choices: [
         "View Employees",
         "View Employees by Department",
+        "View All Departments",
         "Add Employee",
         "Remove Employees",
         "Update Employee Role",
         "Add Role",
+        "Add Department",
         "End",
       ],
     })
@@ -46,6 +48,10 @@ function initialPrompt() {
 
         case "View Employees by Department":
           viewEmployeeByDepartment();
+          break;
+
+        case "View All Departments":
+          viewAllDepartments();
           break;
 
         case "Add Employee":
@@ -62,6 +68,10 @@ function initialPrompt() {
 
         case "Add Role":
           addRole();
+          break;
+
+        case "Add Department":
+          addDepartment();
           break;
 
         case "End":
@@ -109,8 +119,7 @@ function viewEmployeeByDepartment() {
     const departmentChoices = res.map((data) => ({
       value: data.id,
       name: data.name,
-    }
-      ));
+    }));
     console.table(res);
     console.log("Department view succeed!\n");
 
@@ -348,7 +357,8 @@ function promptEmployeeRole(employeeChoices, roleChoices) {
 }
 
 function addRole() {
-  var query = `SELECT d.id, d.name, SUM(r.salary) budget
+  var query = `SELECT d.id, d.name
+  
       FROM employee e
       JOIN role r
       ON e.role_id = r.id
@@ -412,3 +422,40 @@ function promptAddRole(departmentChoices) {
       );
     });
 }
+
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "departmentName",
+        message: "Enter the name of the department:",
+      },
+    ])
+    .then((answer) => {
+      var query = `INSERT INTO department SET ?`;
+
+      connection.query(
+        query,
+        {
+          name: answer.departmentName,
+        },
+        function (err, res) {
+          if (err) throw err;
+
+          console.table(res);
+          console.log("Department Added!");
+
+          initialPrompt();
+        }
+      );
+    });
+}
+
+const viewAllDepartments = () => {
+  connection.query("SELECT * FROM department", (err, results) => {
+    if (err) throw err;
+    console.table(results);
+    initialPrompt();
+  });
+};
