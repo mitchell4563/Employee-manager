@@ -1,6 +1,7 @@
 //dependencies
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
+require("dotenv").config();
 require("console.table");
 
 //db connection
@@ -8,9 +9,9 @@ const connection = mysql.createConnection(
   {
     host: "localhost",
     port: 3306,
-    user: "root",
-    password: "603Bondstreet!",
-    database: "employees_db",
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
   },
   console.log("database connection successful!")
 );
@@ -18,7 +19,6 @@ const connection = mysql.createConnection(
 connection.connect(function (err) {
   if (err) throw err;
   console.log(`Employee Manager Online!`);
-  console.log("connected as id " + connection.threadId);
   initialPrompt();
 });
 
@@ -32,8 +32,10 @@ function initialPrompt() {
         "View Employees",
         "View Employees by Department",
         "View All Departments",
+        "View All Roles",
         "Add Employee",
         "Remove Employees",
+        "Remove Role",
         "Update Employee Role",
         "Add Role",
         "Add Department",
@@ -54,12 +56,20 @@ function initialPrompt() {
           viewAllDepartments();
           break;
 
+        case "View All Roles":
+          viewAllRoles();
+          break;
+
         case "Add Employee":
           addEmployee();
           break;
 
         case "Remove Employees":
           removeEmployees();
+          break;
+
+        case "Remove Role":
+          removeRole();
           break;
 
         case "Update Employee Role":
@@ -121,7 +131,6 @@ function viewEmployeeByDepartment() {
       name: data.name,
     }));
     console.table(res);
-    console.log("Department view succeed!\n");
 
     promptDepartment(departmentChoices);
   });
@@ -133,14 +142,14 @@ function promptDepartment(departmentChoices) {
       {
         type: "list",
         name: "departmentId",
-        message: "Which department would you choose?",
+        message: "Which department would you like to see?",
         choices: departmentChoices,
       },
     ])
     .then(function (answer) {
-      console.log("answer ", answer.departmentId);
+      console.log("answer: ", answer.departmentId);
 
-      var query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department 
+      var query = `SELECT e.id, e.first_name, e.last_name, r.title, r.salary, d.name AS department 
     FROM employee e
     JOIN role r
       ON e.role_id = r.id
@@ -151,13 +160,28 @@ function promptDepartment(departmentChoices) {
       connection.query(query, answer.departmentId, function (err, res) {
         if (err) throw err;
 
-        console.table("response ", res);
-        console.log(res.affectedRows + "Employees are viewed!\n");
+        console.table(res);
 
         initialPrompt();
       });
     });
 }
+
+const viewAllDepartments = () => {
+  connection.query("SELECT * FROM department", (err, results) => {
+    if (err) throw err;
+    console.table(results);
+    initialPrompt();
+  });
+};
+
+const viewAllRoles = () => {
+  connection.query("SELECT * FROM role", (err, results) => {
+    if (err) throw err;
+    console.table(results);
+    initialPrompt();
+  });
+};
 
 function addEmployee() {
   console.log("Inserting an employee!");
@@ -198,6 +222,12 @@ function promptInsert(roleChoices) {
         type: "list",
         name: "roleId",
         message: "What is the employee's role?",
+        choices: roleChoices,
+      },
+      {
+        type: "list",
+        name: "managerId",
+        message: "What is the employee's manager's id? (1-8)",
         choices: roleChoices,
       },
     ])
@@ -259,6 +289,49 @@ function promptDelete(deleteEmployeeChoices) {
     .then(function (answer) {
       var query = `DELETE FROM employee WHERE ?`;
       connection.query(query, { id: answer.employeeId }, function (err, res) {
+        if (err) throw err;
+
+        console.table(res);
+        console.log(res.affectedRows + " Deleted!\n");
+
+        initialPrompt();
+      });
+    });
+}
+
+function removeRole() {
+  console.log("Deleting a role");
+
+  var query = `SELECT * FROM role`;
+
+  connection.query(query, function (err, res) {
+    if (err) throw err;
+
+    const deleteRoleChoices = res.map(({ id, title }) => ({
+      value: id,
+      title: `${id} ${title}`,
+    }));
+
+    console.table(res);
+    console.log("ArrayToDelete!\n");
+
+    promptRoleDelete(deleteRoleChoices);
+  });
+}
+
+function promptRoleDelete(deleteRoleChoices) {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "roleId",
+        message: "Which Role do you want to remove?",
+        choices: deleteRoleChoices,
+      },
+    ])
+    .then(function (answer) {
+      var query = `DELETE FROM role WHERE ?`;
+      connection.query(query, { id: answer.roleId }, function (err, res) {
         if (err) throw err;
 
         console.table(res);
@@ -335,7 +408,7 @@ function promptEmployeeRole(employeeChoices, roleChoices) {
       {
         type: "list",
         name: "roleId",
-        message: "Which role do you want to update?",
+        message: "Which role would you like to assign this employee?",
         choices: roleChoices,
       },
     ])
@@ -451,11 +524,3 @@ function addDepartment() {
       );
     });
 }
-
-const viewAllDepartments = () => {
-  connection.query("SELECT * FROM department", (err, results) => {
-    if (err) throw err;
-    console.table(results);
-    initialPrompt();
-  });
-};
